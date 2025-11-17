@@ -1,9 +1,5 @@
 package main
 
-import (
-	"log"
-)
+import ()
 
-func main() {
-	log.Println("Payment Processing Module Initialized")
-}
+func main() {}
