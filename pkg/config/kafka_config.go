@@ -1,9 +1,9 @@
 package config
 
 import (
-        "log"
+	"log"
 
-        "github.com/joho/godotenv"
+	"github.com/joho/godotenv"
 )
 
 type KafkaProducerConfig struct { 
@@ -54,7 +54,7 @@ func LoadKafkaConsumerConfig() *KafkaConsumerConfig {
 }
 
 func loadConfig() {
-        err := godotenv.Load()
+        err := godotenv.Load("C:\\Users\\Alliex\\Desktop\\Thesis\\Payment-Processing\\.env")
         if err != nil {
                 log.Println(".env file not found, using environment variables")
         }

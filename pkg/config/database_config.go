@@ -1,11 +1,12 @@
 package config
 
 import (
-	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 type DBConfig struct {
@@ -24,7 +25,7 @@ type DBConfig struct {
 
 func LoadDBConfig() *DBConfig {
 	// Load .env file
-	err := godotenv.Load()
+	err := godotenv.Load("C:\\Users\\Alliex\\Desktop\\Thesis\\Payment-Processing\\.env")
 	if err != nil {
 		log.Println(".env file not found, using environment variables")
 	}

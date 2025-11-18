@@ -1,5 +1,6 @@
 package main
 
-import ()
+func main() {
+	// Application entry point
 
-func main() {}
+}
