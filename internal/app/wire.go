@@ -1,7 +1,7 @@
 package app
 
-type App struct {}
+import ()
 
-func StartApp() *App {
-	return &App{}
+func InitializeApp() {
+
 }
