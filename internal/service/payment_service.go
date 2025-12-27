@@ -17,8 +17,7 @@ type PaymentServiceImpl struct {
 func (p PaymentServiceImpl) processCardTransaction() {
 }
 
-func (p PaymentServiceImpl) processQRTransaction() {
-}
+func (p PaymentServiceImpl) processQRTransaction() {}
 
 func NewPaymentService(txRepo repository.PaymentRepository) PaymentService {
 	return &PaymentServiceImpl{txRepo: txRepo}
