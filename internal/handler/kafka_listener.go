@@ -12,9 +12,5 @@ type KafkaListenerImpl struct {
 }
 
 func (k *KafkaListenerImpl) Start() {
-	go func() {
-		for {
-			
-		}
-	}
+
 }
