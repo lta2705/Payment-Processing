@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/bytedance/gopkg/util/logger"
 	"net"
 	"sync"
 )
@@ -14,9 +15,10 @@ func NewSessionManager() *SessionManager {
 	return &SessionManager{}
 }
 
-func (sm *SessionManager) Add(conn net.Conn) {
-	addr := conn.RemoteAddr().String()
-	sm.sessions.Store(addr, conn)
+func (sm *SessionManager) Add(conn net.Conn, trmId string) {
+
+	sm.sessions.Store(trmId, conn)
+	logger.Info("Session added", trmId)
 }
 
 func (sm *SessionManager) Remove(addr string) {
@@ -30,6 +32,27 @@ func (sm *SessionManager) Count() int {
 		return true
 	})
 	return count
+}
+
+func (sm *SessionManager) Send(trmId string, message string) bool {
+	value, exists := sm.sessions.Load(trmId)
+	if !exists {
+		logger.Info("Terminal ID not found:")
+		return false
+	}
+
+	conn, ok := value.(net.Conn)
+	if !ok {
+		logger.Info("Session is not a net conn:")
+		return false
+	}
+	_, err := conn.Write([]byte(message))
+	if err != nil {
+		logger.Error("Error in sending message to terminal", err)
+		return false
+	}
+
+	return true
 }
 
 // Gửi tin nhắn tới tất cả client

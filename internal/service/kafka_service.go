@@ -2,16 +2,16 @@ package service
 
 import (
 	"context"
-
-	"github.com/lta2705/payment-processor/internal/middleware"
+	"github.com/bytedance/gopkg/util/logger"
 	"github.com/segmentio/kafka-go"
-	"go.uber.org/zap"
 )
 
-var logger = middleware.CreateLogger()
+type ConsumerWorker struct {
+	Reader *kafka.Reader
+}
 
 func SendMessage(writer *kafka.Writer, key, value string) error {
-	logger.Info("Message sent", zap.String("key", key), zap.String("value", value))
+	logger.Info("Message sent", key, value)
 	return writer.WriteMessages(context.Background(),
 		kafka.Message{
 			Key:   []byte(key),
@@ -20,23 +20,29 @@ func SendMessage(writer *kafka.Writer, key, value string) error {
 	)
 }
 
-func ConsumeMessage(reader *kafka.Reader, handler func(msg kafka.Message) error) {
+func (cw *ConsumerWorker) ConsumeMessage(reader *kafka.Reader, handler func(msg kafka.Message) error) {
 	for {
 		msg, err := reader.FetchMessage(context.Background())
 		if err != nil {
-			logger.Error("fetch error", zap.Error(err))
+			logger.Error("fetch error", err)
 			continue
 		}
 
 		// Logic Processing
 		if err := handler(msg); err != nil {
-			logger.Error("handler error", zap.Error(err))
+			logger.Error("handler error", err)
 			continue
 		}
 
 		//commit after processing
 		if err := reader.CommitMessages(context.Background(), msg); err != nil {
-			logger.Error("commit error", zap.Error(err))
+			logger.Error("commit error", err)
 		}
+	}
+}
+
+func NewConsumerWorker(reader *kafka.Reader) *ConsumerWorker {
+	return &ConsumerWorker{
+		Reader: reader,
 	}
 }

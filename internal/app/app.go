@@ -2,21 +2,21 @@ package app
 
 import (
 	"context"
-	"fmt"
+	"github.com/lta2705/payment-processor/internal/transport"
 	"net"
 	"sync"
 )
 
 type App struct {
 	Listener net.Listener
-	Sessions *SessionManager
+	Server   *transport.Server
 	wg       sync.WaitGroup
 }
 
-func NewApp(l net.Listener, sm *SessionManager) *App {
+func NewApp(listener net.Listener, server *transport.Server) *App {
 	return &App{
-		Listener: l,
-		Sessions: sm,
+		Listener: listener,
+		Server:   server,
 	}
 }
 
@@ -28,57 +28,20 @@ func (a *App) Start(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			default:
-				fmt.Printf("Accept error: %v\n", err)
 				continue
 			}
 		}
 
 		a.wg.Add(1)
-		go a.handleConnection(ctx, conn)
-	}
-}
-
-func (a *App) handleConnection(ctx context.Context, conn net.Conn) {
-	defer a.wg.Done()
-	addr := conn.RemoteAddr().String()
-
-	a.Sessions.Add(conn)
-	fmt.Printf("[+] Session opened: %s\n", addr)
-
-	defer func() {
-		a.Sessions.Remove(addr)
-		conn.Close()
-		fmt.Printf("[-] Session closed: %s\n", addr)
-	}()
-
-	// Tạo buffer để đọc dữ liệu
-	buf := make([]byte, 4096)
-
-	for {
-		select {
-		case <-ctx.Done():
-			conn.Write([]byte("Server shutting down...\n"))
-			return
-		default:
-			n, err := conn.Read(buf)
-			if err != nil {
-				return
-			}
-
-			// Logic processing
-			message := string(buf[:n])
-			fmt.Printf("[%s]: %s", addr, message)
-
-			// Send response but do not close
-			conn.Write([]byte("ACK: Received your message\n"))
-		}
+		go func() {
+			defer a.wg.Done()
+			a.Server.HandleConnection(ctx, conn)
+		}()
 	}
 }
 
 func (a *App) Stop() {
-	fmt.Println("Shutting down...")
 	a.Listener.Close()
-	a.Sessions.CloseAll()
+	a.Server.Close()
 	a.wg.Wait()
-	fmt.Println("Server stopped cleanly.")
 }
