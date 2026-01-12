@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+
 	"github.com/bytedance/gopkg/util/logger"
 	"github.com/segmentio/kafka-go"
 )
@@ -11,7 +12,7 @@ type ConsumerWorker struct {
 }
 
 func SendMessage(writer *kafka.Writer, key, value string) error {
-	logger.Info("Message sent", key, value)
+	logger.Info("Message sent", "key", key, "value", value)
 	return writer.WriteMessages(context.Background(),
 		kafka.Message{
 			Key:   []byte(key),

@@ -8,54 +8,46 @@ package app
 
 import (
 	"github.com/google/wire"
+	"github.com/lta2705/payment-processor/internal/functionality"
+	"github.com/lta2705/payment-processor/internal/handler"
 	"github.com/lta2705/payment-processor/internal/middleware"
+	"github.com/lta2705/payment-processor/internal/repository"
 	"github.com/lta2705/payment-processor/internal/service"
-	"github.com/lta2705/payment-processor/internal/transport"
+	"github.com/lta2705/payment-processor/internal/worker"
 	"github.com/lta2705/payment-processor/pkg/config"
-	"net"
-	"os"
 )
 
 // Injectors from wire.go:
 
 func InitializeApp() (*App, error) {
-	listener, err := ProvideListener()
-	if err != nil {
-		return nil, err
-	}
-	sessionManager := NewSessionManager()
 	kafkaProducerConfig := config.LoadKafkaProducerConfig()
 	writer := middleware.CreateKafkaProducer(kafkaProducerConfig)
+	kafkaProducerWorker := worker.NewProducerWorker(writer)
+	producer := functionality.NewProduce(kafkaProducerWorker)
 	kafkaConsumerConfig := config.LoadKafkaConsumerConfig()
 	reader := middleware.CreateKafkaConsumer(kafkaConsumerConfig)
+	kafkaConsumerWorker := worker.NewConsumerWorker(reader)
 	dbConfig := config.LoadDBConfig()
 	db := middleware.SetupDatabase(dbConfig)
-	server := transport.NewServer(sessionManager, writer, reader, db)
-	app := NewApp(listener, server)
+	paymentRepository := repository.NewTransactionRepository(db)
+	paymentService := service.NewPaymentService(paymentRepository)
+	cardPaymentHandler := handler.NewCardPaymentHandler(paymentService)
+	qrPaymentHandler := handler.NewQrPaymentHandler(paymentService)
+	consumer := functionality.NewConsumer(kafkaConsumerWorker, cardPaymentHandler, qrPaymentHandler)
+	app := NewApp(producer, consumer)
 	return app, nil
 }
 
 // wire.go:
 
-func ProvideListener() (net.Listener, error) {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8089"
-	}
-	return net.Listen("tcp", ":"+port)
-}
+var repositorySet = wire.NewSet(repository.NewTransactionRepository)
 
-var DatabaseSet = wire.NewSet(config.LoadDBConfig, middleware.SetupDatabase)
+var serviceSet = wire.NewSet(service.NewPaymentService)
 
-var ProducerWorkerSet = wire.NewSet(config.LoadKafkaProducerConfig, middleware.CreateKafkaProducer)
+var handlerSet = wire.NewSet(handler.NewCardPaymentHandler, handler.NewQrPaymentHandler)
 
-var ConsumerWorkerSet = wire.NewSet(config.LoadKafkaConsumerConfig, middleware.CreateKafkaConsumer, service.NewConsumerWorker)
+var ProducerSet = wire.NewSet(config.LoadKafkaProducerConfig, middleware.CreateKafkaProducer, worker.NewProducerWorker, functionality.NewProduce)
 
-var sessionSet = wire.NewSet(
-	NewSessionManager, wire.Bind(
-		new(transport.SessionManager),
-		new(*SessionManager),
-	),
-)
+var ConsumerSet = wire.NewSet(config.LoadKafkaConsumerConfig, middleware.CreateKafkaConsumer, worker.NewConsumerWorker, functionality.NewConsumer)
 
-var ServerSet = wire.NewSet(transport.NewServer, transport.NewHandler)
+var databaseSet = wire.NewSet(config.LoadDBConfig, middleware.SetupDatabase)

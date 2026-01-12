@@ -5,59 +5,55 @@ package app
 
 import (
 	"github.com/google/wire"
+	"github.com/lta2705/payment-processor/internal/functionality"
+	"github.com/lta2705/payment-processor/internal/handler"
 	"github.com/lta2705/payment-processor/internal/middleware"
+	"github.com/lta2705/payment-processor/internal/repository"
 	"github.com/lta2705/payment-processor/internal/service"
-	"github.com/lta2705/payment-processor/internal/transport"
+	"github.com/lta2705/payment-processor/internal/worker"
 	"github.com/lta2705/payment-processor/pkg/config"
-	"net"
-	"os"
 )
 
-func ProvideListener() (net.Listener, error) {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8089"
-	}
-	return net.Listen("tcp", ":"+port)
-}
+var repositorySet = wire.NewSet(
+	repository.NewTransactionRepository,
+)
 
-var DatabaseSet = wire.NewSet(
+var serviceSet = wire.NewSet(
+	service.NewPaymentService,
+)
+
+var handlerSet = wire.NewSet(
+	handler.NewCardPaymentHandler,
+	handler.NewQrPaymentHandler,
+)
+
+var ProducerSet = wire.NewSet(
+	config.LoadKafkaProducerConfig,
+	middleware.CreateKafkaProducer,
+	worker.NewProducerWorker,
+	functionality.NewProduce,
+)
+
+var ConsumerSet = wire.NewSet(
+	config.LoadKafkaConsumerConfig,
+	middleware.CreateKafkaConsumer,
+	worker.NewConsumerWorker,
+	functionality.NewConsumer,
+)
+
+var databaseSet = wire.NewSet(
 	config.LoadDBConfig,
 	middleware.SetupDatabase,
 )
 
-var ProducerWorkerSet = wire.NewSet(
-	config.LoadKafkaProducerConfig,
-	middleware.CreateKafkaProducer,
-)
-
-var ConsumerWorkerSet = wire.NewSet(
-	config.LoadKafkaConsumerConfig,
-	middleware.CreateKafkaConsumer,
-	service.NewConsumerWorker,
-)
-
-var sessionSet = wire.NewSet(
-	NewSessionManager,
-	wire.Bind(
-		new(transport.SessionManager),
-		new(*SessionManager),
-	),
-)
-
-var ServerSet = wire.NewSet(
-	transport.NewServer,
-	transport.NewHandler,
-)
-
 func InitializeApp() (*App, error) {
 	wire.Build(
-		ProvideListener,
-		DatabaseSet,
-		ProducerWorkerSet,
-		ConsumerWorkerSet,
-		sessionSet,
-		ServerSet,
+		databaseSet,
+		repositorySet,
+		serviceSet,
+		handlerSet,
+		ProducerSet,
+		ConsumerSet,
 		NewApp,
 	)
 	return &App{}, nil

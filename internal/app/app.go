@@ -1,47 +1,15 @@
 package app
 
-import (
-	"context"
-	"github.com/lta2705/payment-processor/internal/transport"
-	"net"
-	"sync"
-)
+import "github.com/lta2705/payment-processor/internal/functionality"
 
 type App struct {
-	Listener net.Listener
-	Server   *transport.Server
-	wg       sync.WaitGroup
+	Producer functionality.Producer
+	Consumer functionality.Consumer
 }
 
-func NewApp(listener net.Listener, server *transport.Server) *App {
+func NewApp(producer functionality.Producer, consumer functionality.Consumer) *App {
 	return &App{
-		Listener: listener,
-		Server:   server,
+		Producer: producer,
+		Consumer: consumer,
 	}
-}
-
-func (a *App) Start(ctx context.Context) {
-	for {
-		conn, err := a.Listener.Accept()
-		if err != nil {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				continue
-			}
-		}
-
-		a.wg.Add(1)
-		go func() {
-			defer a.wg.Done()
-			a.Server.HandleConnection(ctx, conn)
-		}()
-	}
-}
-
-func (a *App) Stop() {
-	a.Listener.Close()
-	a.Server.Close()
-	a.wg.Wait()
 }
