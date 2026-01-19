@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/bytedance/gopkg/util/logger"
-	"github.com/lta2705/payment-processor/internal/model"
 	"github.com/lta2705/payment-processor/pkg/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -23,9 +22,9 @@ func SetupDatabase(cfg *config.DBConfig) *gorm.DB {
 	}
 
 	// Auto-migrate the schema
-	if err := db.AutoMigrate(&model.Transaction{}); err != nil {
-		logger.Fatal("Failed to auto-migrate database schema", err)
-	}
+	//if err := db.AutoMigrate(&model.Transaction{}); err != nil {
+	//	logger.Fatal("Failed to auto-migrate database schema", err)
+	//}
 
 	sqlDB, err := db.DB()
 	if err != nil {

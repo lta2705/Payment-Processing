@@ -10,7 +10,7 @@ type PaymentRepository interface {
 	UpdatePayment(model *model.Transaction) error                                                   // Update an existing transaction record
 	GetDB() *gorm.DB                                                                                // Get the underlying gorm DB instance
 	FindByTransactionId(id *string) (*model.Transaction, error)                                     // Find a transaction by its ID
-	FindByPcPosIdAndTransactionId(transactionId string, pcPosId string) (*model.Transaction, error) // Find a transaction by PcPosId and TransactionId
+	FindByTransactionIdAndPcPosId(transactionId string, pcPosId string) (*model.Transaction, error) // Find a transaction by PcPosId and TransactionId
 }
 
 type PaymentRepositoryImpl struct {
@@ -31,7 +31,7 @@ func (r *PaymentRepositoryImpl) FindByTransactionId(id *string) (*model.Transact
 	err := r.db.Where("transaction_id = ?", id).First(&transaction).Error
 	return &transaction, err
 }
-func (r *PaymentRepositoryImpl) FindByPcPosIdAndTransactionId(transactionId string, pcPosId string) (*model.Transaction, error) {
+func (r *PaymentRepositoryImpl) FindByTransactionIdAndPcPosId(transactionId string, pcPosId string) (*model.Transaction, error) {
 	var transaction model.Transaction
 	err := r.db.Where("transaction_id = ? AND pc_pos_id = ?", transactionId, pcPosId).First(&transaction).Error
 	return &transaction, err

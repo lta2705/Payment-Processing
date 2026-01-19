@@ -30,8 +30,8 @@ func CreateKafkaConsumer(kafkaCfg *config.KafkaConsumerConfig) *kafka.Reader {
 		MaxWait:  1 * time.Second,
 
 		// Consumer group stability
-		SessionTimeout:   30 * time.Second,
-		RebalanceTimeout: 60 * time.Second,
+		SessionTimeout:   60 * time.Second,
+		RebalanceTimeout: 300 * time.Second,
 
 		// Offset
 		StartOffset: kafka.FirstOffset,
@@ -42,7 +42,7 @@ func CreateKafkaConsumer(kafkaCfg *config.KafkaConsumerConfig) *kafka.Reader {
 		// Isolation
 		IsolationLevel: kafka.ReadCommitted,
 
-		Logger:      kafka.LoggerFunc(log.Printf),
+		//Logger:      kafka.LoggerFunc(log.Printf),
 		ErrorLogger: kafka.LoggerFunc(log.Printf),
 	})
 }
